@@ -51,4 +51,10 @@ final class AppState: ObservableObject {
     func launch(_ app: InstalledApp) {
         NSWorkspace.shared.open(app.bundleURL)
     }
+
+    func regenerate(_ app: InstalledApp, newName: String, newURL: URL, newUA: String?) async {
+        // Delete then re-create; bundleId stays stable if slug derives identically.
+        delete(app)
+        await createAuto(name: newName, url: newURL, userAgent: newUA)
+    }
 }
