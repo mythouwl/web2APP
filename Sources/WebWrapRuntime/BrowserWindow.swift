@@ -48,9 +48,9 @@ final class BrowserWindow: NSWindow, NSToolbarDelegate {
                  itemForItemIdentifier id: NSToolbarItem.Identifier,
                  willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
         switch id {
-        case ItemID.back:    return makeItem(id, symbol: "chevron.left",    action: #selector(goBack))
-        case ItemID.forward: return makeItem(id, symbol: "chevron.right",   action: #selector(goForward))
-        case ItemID.reload:  return makeItem(id, symbol: "arrow.clockwise", action: #selector(reloadPage))
+        case ItemID.back:    return makeItem(id, symbol: "chevron.left",    action: #selector(goBackAction(_:)))
+        case ItemID.forward: return makeItem(id, symbol: "chevron.right",   action: #selector(goForwardAction(_:)))
+        case ItemID.reload:  return makeItem(id, symbol: "arrow.clockwise", action: #selector(reloadAction(_:)))
         default: return nil
         }
     }
@@ -65,7 +65,7 @@ final class BrowserWindow: NSWindow, NSToolbarDelegate {
         return item
     }
 
-    @objc private func goBack()     { webView.goBack() }
-    @objc private func goForward()  { webView.goForward() }
-    @objc private func reloadPage() { webView.reload() }
+    @objc func goBackAction(_ sender: Any?)    { webView.goBack() }
+    @objc func goForwardAction(_ sender: Any?) { webView.goForward() }
+    @objc func reloadAction(_ sender: Any?)    { webView.reload() }
 }

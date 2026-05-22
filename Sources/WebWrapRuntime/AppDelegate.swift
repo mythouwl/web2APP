@@ -18,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         let window = BrowserWindow(config: config)
         window.makeKeyAndOrderFront(nil)
+        NSApp.mainMenu = MenuBar.build(appName: config.name)
         self.browserWindow = window
     }
 
