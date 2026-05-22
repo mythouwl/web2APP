@@ -2,7 +2,6 @@ import SwiftUI
 
 struct SidebarView: View {
     @ObservedObject var state: AppState
-    @Binding var showCreate: Bool
     @Binding var showPreferences: Bool
     @EnvironmentObject var loc: Localization
 
@@ -19,28 +18,16 @@ struct SidebarView: View {
                 }
             }
             Divider()
-            HStack(spacing: 4) {
-                Button(action: { showCreate = true }) {
-                    Image(systemName: "plus")
-                }
-                .buttonStyle(.borderless)
-                .help(loc.t(.newWrapper))
-
-                Button(action: state.refresh) {
-                    Image(systemName: "arrow.clockwise")
-                }
-                .buttonStyle(.borderless)
-                .help(loc.t(.refresh))
-
+            HStack {
                 Spacer()
-
                 Button(action: { showPreferences = true }) {
                     Image(systemName: "gearshape")
                 }
                 .buttonStyle(.borderless)
                 .help(loc.t(.preferences))
             }
-            .padding(8)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
         }
     }
 }

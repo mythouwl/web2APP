@@ -10,15 +10,24 @@ struct WebWrapApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationSplitView {
-                SidebarView(state: state,
-                            showCreate: $showCreate,
-                            showPreferences: $showPreferences)
+                SidebarView(state: state, showPreferences: $showPreferences)
                     .navigationSplitViewColumnWidth(min: 200, ideal: 240)
             } detail: {
                 DetailView(state: state)
             }
             .environmentObject(loc)
             .frame(minWidth: 720, minHeight: 480)
+            .navigationTitle(loc.t(.windowTitle))
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showCreate = true
+                    } label: {
+                        Label(loc.t(.newWrapper), systemImage: "plus")
+                    }
+                    .help(loc.t(.newWrapper))
+                }
+            }
             .task {
                 state.refresh()
                 await state.autoUpdateRuntimesIfNeeded()
@@ -35,6 +44,10 @@ struct WebWrapApp: App {
             CommandGroup(after: .newItem) {
                 Button(loc.t(.newWrapperMenu)) { showCreate = true }
                     .keyboardShortcut("n")
+            }
+            CommandGroup(replacing: .sidebar) {
+                Button(loc.t(.refresh)) { state.refresh() }
+                    .keyboardShortcut("r")
             }
             CommandGroup(after: .appInfo) {
                 Button(loc.t(.preferences) + "…") { showPreferences = true }
