@@ -14,6 +14,32 @@ final class WebViewDelegate: NSObject, WKNavigationDelegate, WKUIDelegate {
         "about", "data", "blob", "javascript", "file",
     ]
 
+    // Domains used by common SSO / OAuth flows. We allow these in-window so that
+    // "Sign in with Google/Apple/GitHub/..." flows complete inside the wrapper,
+    // then redirect naturally back to the wrapper's allowed host.
+    private static let trustedAuthHosts: Set<String> = [
+        // Google
+        "accounts.google.com", "accounts.youtube.com", "ssl.gstatic.com",
+        // Apple
+        "appleid.apple.com", "idmsa.apple.com",
+        // Microsoft
+        "login.microsoftonline.com", "login.live.com", "login.windows.net",
+        // GitHub / GitLab / Bitbucket
+        "github.com", "gitlab.com", "bitbucket.org",
+        // Meta
+        "facebook.com", "www.facebook.com", "m.facebook.com",
+        // X / Twitter
+        "twitter.com", "x.com", "api.twitter.com",
+        // Other major identity providers
+        "auth0.com", "okta.com", "duosecurity.com",
+        // LinkedIn / Slack / Discord (SSO entry points)
+        "linkedin.com", "slack.com", "discord.com",
+    ]
+
+    private func isTrustedAuthHost(_ host: String) -> Bool {
+        Self.trustedAuthHosts.contains { host == $0 || host.hasSuffix("." + $0) }
+    }
+
     func webView(_ webView: WKWebView,
                  decidePolicyFor navigationAction: WKNavigationAction,
                  decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
@@ -40,9 +66,11 @@ final class WebViewDelegate: NSObject, WKNavigationDelegate, WKUIDelegate {
             decisionHandler(.cancel); return
         }
 
-        // Top-level http(s): same host or subdomain stays in wrapper; else system browser
+        // Top-level http(s): same host or subdomain stays in wrapper;
+        // trusted OAuth/SSO hosts also stay (so Google/Apple/GitHub sign-in works);
+        // everything else goes to the system browser.
         let host = url.host ?? ""
-        if hostMatches(host) {
+        if hostMatches(host) || isTrustedAuthHost(host) {
             decisionHandler(.allow)
         } else {
             NSWorkspace.shared.open(url)
@@ -61,7 +89,7 @@ final class WebViewDelegate: NSObject, WKNavigationDelegate, WKUIDelegate {
         if scheme != "http", scheme != "https" {
             return nil  // let the main policy decide
         }
-        if let host = url.host, hostMatches(host) {
+        if let host = url.host, hostMatches(host) || isTrustedAuthHost(host) {
             webView.load(navigationAction.request)
         } else {
             NSWorkspace.shared.open(url)
