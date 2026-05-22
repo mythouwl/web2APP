@@ -2,20 +2,22 @@ import SwiftUI
 
 struct DetailView: View {
     @ObservedObject var state: AppState
+    @EnvironmentObject var loc: Localization
 
     var body: some View {
         if let id = state.selection,
            let app = state.wrappers.first(where: { $0.id == id }) {
             EditDetailForm(state: state, app: app)
-                .id(app.id)  // re-init @State when selection changes
+                .id(app.id)
+                .environmentObject(loc)
         } else {
             VStack(spacing: 12) {
                 Image(systemName: "square.stack.3d.up")
                     .font(.system(size: 56))
                     .foregroundStyle(.tertiary)
-                Text("No wrappers yet")
+                Text(loc.t(.noWrappersTitle))
                     .font(.title2)
-                Text("Click + in the sidebar to create your first one.")
+                Text(loc.t(.noWrappersDescription))
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -26,6 +28,7 @@ struct DetailView: View {
 private struct EditDetailForm: View {
     @ObservedObject var state: AppState
     let app: InstalledApp
+    @EnvironmentObject var loc: Localization
 
     @State private var editName: String = ""
     @State private var editURL: String = ""
@@ -44,19 +47,19 @@ private struct EditDetailForm: View {
                     Spacer()
                 }
             }
-            Section("Settings") {
-                TextField("Name", text: $editName)
-                TextField("URL", text: $editURL)
-                TextField("User-Agent (optional)", text: $editUA)
+            Section(loc.t(.settings)) {
+                TextField(loc.t(.name), text: $editName)
+                TextField(loc.t(.url), text: $editURL)
+                TextField(loc.t(.userAgent), text: $editUA)
             }
             Section {
                 HStack {
-                    Button("Launch")  { state.launch(app) }
-                    Button("Reveal in Finder") { state.reveal(app) }
+                    Button(loc.t(.launch))  { state.launch(app) }
+                    Button(loc.t(.revealInFinder)) { state.reveal(app) }
                     Spacer()
-                    Button("Regenerate") { Task { await regenerate() } }
+                    Button(loc.t(.regenerate)) { Task { await regenerate() } }
                         .disabled(!canRegenerate || isWorking)
-                    Button("Delete", role: .destructive) { state.delete(app) }
+                    Button(loc.t(.delete), role: .destructive) { state.delete(app) }
                 }
                 if isWorking { ProgressView().controlSize(.small) }
             }

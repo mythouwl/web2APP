@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 struct CreateSheet: View {
     @ObservedObject var state: AppState
     @Binding var isPresented: Bool
+    @EnvironmentObject var loc: Localization
 
     @State private var name = ""
     @State private var urlText = ""
@@ -13,30 +14,30 @@ struct CreateSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("New Wrapper").font(.headline)
+            Text(loc.t(.newWrapperMenu)).font(.headline)
 
             Form {
-                TextField("Name", text: $name)
-                TextField("URL", text: $urlText, prompt: Text("https://example.com"))
-                TextField("User-Agent (optional)", text: $userAgent)
+                TextField(loc.t(.name), text: $name)
+                TextField(loc.t(.url), text: $urlText, prompt: Text("https://example.com"))
+                TextField(loc.t(.userAgent), text: $userAgent)
                 HStack {
-                    Text("Icon:")
+                    Text(loc.t(.icon) + ":")
                     if let data = iconImageData, let img = NSImage(data: data) {
                         Image(nsImage: img).resizable().frame(width: 48, height: 48)
                     } else {
-                        Text("Auto-fetched from site")
+                        Text(loc.t(.autoFetched))
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button("Choose…") { pickIcon() }
+                    Button(loc.t(.choose)) { pickIcon() }
                 }
             }
             .formStyle(.grouped)
 
             HStack {
                 Spacer()
-                Button("Cancel") { isPresented = false }
-                Button("Create") { Task { await create() } }
+                Button(loc.t(.cancel)) { isPresented = false }
+                Button(loc.t(.create)) { Task { await create() } }
                     .keyboardShortcut(.defaultAction)
                     .disabled(!canCreate || isBuilding)
             }

@@ -57,4 +57,39 @@ final class AppState: ObservableObject {
         delete(app)
         await createAuto(name: newName, url: newURL, userAgent: newUA)
     }
+
+    /// Replaces the WebWrapRuntime binary inside every installed wrapper with the current
+    /// runtime, then re-signs each. Returns the number successfully updated.
+    func updateAllWrappers() async -> Int {
+        let appsSnapshot = wrappers
+        guard let runtime = try? AppBuilder.locateRuntimeBinary() else { return 0 }
+        let runtimePath = runtime.path
+        let result = await Task.detached(priority: .userInitiated) { () -> Int in
+            var count = 0
+            let fm = FileManager.default
+            for app in appsSnapshot {
+                let dst = app.bundleURL.appendingPathComponent("Contents/MacOS/WebWrapRuntime")
+                do {
+                    if fm.fileExists(atPath: dst.path) {
+                        try fm.removeItem(at: dst)
+                    }
+                    try fm.copyItem(at: URL(fileURLWithPath: runtimePath), to: dst)
+                    try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: dst.path)
+                    let proc = Process()
+                    proc.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
+                    proc.arguments = ["--force", "--deep", "--sign", "-", app.bundleURL.path]
+                    proc.standardOutput = Pipe()
+                    proc.standardError = Pipe()
+                    try proc.run()
+                    proc.waitUntilExit()
+                    if proc.terminationStatus == 0 { count += 1 }
+                } catch {
+                    // skip this wrapper, continue
+                }
+            }
+            return count
+        }.value
+        refresh()
+        return result
+    }
 }
