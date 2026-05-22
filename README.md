@@ -51,8 +51,8 @@
 
 ```bash
 xcode-select --install   # 如果还没装
-git clone https://github.com/<your-name>/webwrap.git
-cd webwrap
+git clone https://github.com/mythouwl/web2APP.git
+cd web2APP
 make install
 ```
 
