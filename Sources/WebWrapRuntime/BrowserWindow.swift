@@ -3,12 +3,18 @@ import AppKit
 
 final class BrowserWindow: NSWindow, NSToolbarDelegate {
     let webView: WKWebView
+    private var navDelegate: WebViewDelegate?
 
     init(config: Config) {
         let webConfig = WKWebViewConfiguration()
         webConfig.websiteDataStore = .default()
         self.webView = WKWebView(frame: .zero, configuration: webConfig)
         if let ua = config.userAgent { webView.customUserAgent = ua }
+
+        let delegate = WebViewDelegate(allowedHost: config.host)
+        webView.navigationDelegate = delegate
+        webView.uiDelegate = delegate
+        self.navDelegate = delegate  // retain — WKWebView holds delegates weakly
 
         super.init(
             contentRect: NSRect(x: 0, y: 0, width: 1100, height: 720),
