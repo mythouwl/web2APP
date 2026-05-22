@@ -1,7 +1,7 @@
 import AppKit
 @preconcurrency import WebKit
 
-final class BrowserWindow: NSWindow {
+final class BrowserWindow: NSWindow, NSToolbarDelegate {
     let webView: WKWebView
 
     init(config: Config) {
@@ -19,6 +19,53 @@ final class BrowserWindow: NSWindow {
         self.title = config.name
         self.center()
         self.contentView = webView
+
+        let toolbar = NSToolbar(identifier: "main")
+        toolbar.delegate = self
+        toolbar.displayMode = .iconOnly
+        self.toolbar = toolbar
+
         webView.load(URLRequest(url: config.url))
     }
+
+    // MARK: - Toolbar items
+
+    private enum ItemID {
+        static let back = NSToolbarItem.Identifier("back")
+        static let forward = NSToolbarItem.Identifier("forward")
+        static let reload = NSToolbarItem.Identifier("reload")
+    }
+
+    func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+        [ItemID.back, ItemID.forward, .flexibleSpace, ItemID.reload]
+    }
+
+    func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+        [ItemID.back, ItemID.forward, ItemID.reload, .flexibleSpace, .space]
+    }
+
+    func toolbar(_ toolbar: NSToolbar,
+                 itemForItemIdentifier id: NSToolbarItem.Identifier,
+                 willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
+        switch id {
+        case ItemID.back:    return makeItem(id, symbol: "chevron.left",    action: #selector(goBack))
+        case ItemID.forward: return makeItem(id, symbol: "chevron.right",   action: #selector(goForward))
+        case ItemID.reload:  return makeItem(id, symbol: "arrow.clockwise", action: #selector(reloadPage))
+        default: return nil
+        }
+    }
+
+    private func makeItem(_ id: NSToolbarItem.Identifier,
+                          symbol: String,
+                          action: Selector) -> NSToolbarItem {
+        let item = NSToolbarItem(itemIdentifier: id)
+        item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+        item.target = self
+        item.action = action
+        return item
+    }
+
+    @objc private func goBack()     { webView.goBack() }
+    @objc private func goForward()  { webView.goForward() }
+    @objc private func reloadPage() { webView.reload() }
 }
