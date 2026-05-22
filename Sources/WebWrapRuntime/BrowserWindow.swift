@@ -5,6 +5,8 @@ final class BrowserWindow: NSWindow, NSToolbarDelegate {
     let webView: WKWebView
     private var navDelegate: WebViewDelegate?
     private var titleObservation: NSKeyValueObservation?
+    private var urlObservation: NSKeyValueObservation?
+    private let addressBar = AddressBar(frame: NSRect(x: 0, y: 0, width: 400, height: 28))
 
     init(config: Config) {
         let webConfig = WKWebViewConfiguration()
@@ -31,15 +33,25 @@ final class BrowserWindow: NSWindow, NSToolbarDelegate {
         toolbar.delegate = self
         toolbar.displayMode = .iconOnly
         self.toolbar = toolbar
-        self.toolbarStyle = .unified
-        self.titleVisibility = .hidden  // give toolbar items more room
+        self.toolbarStyle = .unifiedCompact  // ~28pt instead of ~38pt
+        self.titleVisibility = .hidden
+
+        addressBar.pageTitle = config.name
+        addressBar.pageURL = config.url.absoluteString
 
         webView.load(URLRequest(url: config.url))
 
-        titleObservation = webView.observe(\.title, options: [.new]) { _, change in
+        titleObservation = webView.observe(\.title, options: [.new]) { [weak self] _, change in
             let title = (change.newValue ?? nil) ?? ""
             DispatchQueue.main.async {
                 NSApp.dockTile.badgeLabel = BrowserWindow.extractBadge(from: title)
+                if !title.isEmpty { self?.addressBar.pageTitle = title }
+            }
+        }
+        urlObservation = webView.observe(\.url, options: [.new]) { [weak self] _, change in
+            let url = (change.newValue ?? nil)?.absoluteString ?? ""
+            DispatchQueue.main.async {
+                if !url.isEmpty { self?.addressBar.pageURL = url }
             }
         }
     }
@@ -59,17 +71,18 @@ final class BrowserWindow: NSWindow, NSToolbarDelegate {
 
     private enum ItemID {
         static let navGroup     = NSToolbarItem.Identifier("navGroup")
+        static let addressBar   = NSToolbarItem.Identifier("addressBar")
         static let openExternal = NSToolbarItem.Identifier("openExternal")
         static let reload       = NSToolbarItem.Identifier("reload")
         static let divider      = NSToolbarItem.Identifier("divider")
     }
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [ItemID.navGroup, .flexibleSpace, ItemID.reload, .space, ItemID.divider, .space, ItemID.openExternal]
+        [ItemID.navGroup, .flexibleSpace, ItemID.addressBar, .flexibleSpace, ItemID.reload, .space, ItemID.divider, .space, ItemID.openExternal]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [ItemID.navGroup, ItemID.openExternal, ItemID.reload, ItemID.divider, .flexibleSpace, .space]
+        [ItemID.navGroup, ItemID.addressBar, ItemID.openExternal, ItemID.reload, ItemID.divider, .flexibleSpace, .space]
     }
 
     func toolbar(_ toolbar: NSToolbar,
@@ -91,6 +104,13 @@ final class BrowserWindow: NSWindow, NSToolbarDelegate {
             group.controlRepresentation = .expanded
             group.label = "Navigation"
             return group
+        case ItemID.addressBar:
+            let item = NSToolbarItem(itemIdentifier: id)
+            item.view = addressBar
+            item.minSize = NSSize(width: 240, height: 24)
+            item.maxSize = NSSize(width: 9999, height: 24)
+            item.label = ""
+            return item
         case ItemID.openExternal:
             return makeItem(id, symbol: "safari",          action: #selector(openExternalAction(_:)), label: "Open in Browser")
         case ItemID.reload:
