@@ -24,7 +24,8 @@ final class AddressBar: NSView {
         field.alignment = .center
         field.isEditable = false
         field.isSelectable = false
-        field.font = .systemFont(ofSize: 12)
+        field.font = .systemFont(ofSize: 12.5, weight: .medium)
+        field.textColor = .labelColor
         field.lineBreakMode = .byTruncatingTail
         field.usesSingleLineMode = true
         field.translatesAutoresizingMaskIntoConstraints = false
