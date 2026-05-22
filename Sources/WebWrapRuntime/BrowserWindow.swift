@@ -107,8 +107,8 @@ final class BrowserWindow: NSWindow, NSToolbarDelegate {
         case ItemID.addressBar:
             let item = NSToolbarItem(itemIdentifier: id)
             item.view = addressBar
-            item.minSize = NSSize(width: 240, height: 24)
-            item.maxSize = NSSize(width: 9999, height: 24)
+            item.minSize = NSSize(width: 400, height: 24)
+            item.maxSize = NSSize(width: 400, height: 24)
             item.label = ""
             return item
         case ItemID.openExternal:
