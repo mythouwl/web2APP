@@ -61,14 +61,15 @@ final class BrowserWindow: NSWindow, NSToolbarDelegate {
         static let navGroup     = NSToolbarItem.Identifier("navGroup")
         static let openExternal = NSToolbarItem.Identifier("openExternal")
         static let reload       = NSToolbarItem.Identifier("reload")
+        static let divider      = NSToolbarItem.Identifier("divider")
     }
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [ItemID.navGroup, .flexibleSpace, ItemID.reload, ItemID.openExternal]
+        [ItemID.navGroup, .flexibleSpace, ItemID.reload, .space, ItemID.divider, .space, ItemID.openExternal]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [ItemID.navGroup, ItemID.openExternal, ItemID.reload, .flexibleSpace, .space]
+        [ItemID.navGroup, ItemID.openExternal, ItemID.reload, ItemID.divider, .flexibleSpace, .space]
     }
 
     func toolbar(_ toolbar: NSToolbar,
@@ -94,6 +95,18 @@ final class BrowserWindow: NSWindow, NSToolbarDelegate {
             return makeItem(id, symbol: "safari",          action: #selector(openExternalAction(_:)), label: "Open in Browser")
         case ItemID.reload:
             return makeItem(id, symbol: "arrow.clockwise", action: #selector(reloadAction(_:)),       label: "Reload")
+        case ItemID.divider:
+            let item = NSToolbarItem(itemIdentifier: id)
+            let line = NSBox()
+            line.boxType = .separator
+            line.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                line.widthAnchor.constraint(equalToConstant: 1),
+                line.heightAnchor.constraint(equalToConstant: 22),
+            ])
+            item.view = line
+            item.label = ""
+            return item
         default:
             return nil
         }
