@@ -31,6 +31,8 @@ final class BrowserWindow: NSWindow, NSToolbarDelegate {
         toolbar.delegate = self
         toolbar.displayMode = .iconOnly
         self.toolbar = toolbar
+        self.toolbarStyle = .unified
+        self.titleVisibility = .hidden  // give toolbar items more room
 
         webView.load(URLRequest(url: config.url))
 
@@ -56,29 +58,52 @@ final class BrowserWindow: NSWindow, NSToolbarDelegate {
     // MARK: - Toolbar items
 
     private enum ItemID {
-        static let back = NSToolbarItem.Identifier("back")
-        static let forward = NSToolbarItem.Identifier("forward")
+        static let navGroup     = NSToolbarItem.Identifier("navGroup")
         static let openExternal = NSToolbarItem.Identifier("openExternal")
-        static let reload = NSToolbarItem.Identifier("reload")
+        static let reload       = NSToolbarItem.Identifier("reload")
     }
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [ItemID.back, ItemID.forward, .flexibleSpace, ItemID.openExternal, ItemID.reload]
+        [ItemID.navGroup, .flexibleSpace, ItemID.reload, ItemID.openExternal]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [ItemID.back, ItemID.forward, ItemID.openExternal, ItemID.reload, .flexibleSpace, .space]
+        [ItemID.navGroup, ItemID.openExternal, ItemID.reload, .flexibleSpace, .space]
     }
 
     func toolbar(_ toolbar: NSToolbar,
                  itemForItemIdentifier id: NSToolbarItem.Identifier,
                  willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
         switch id {
-        case ItemID.back:         return makeItem(id, symbol: "chevron.left",       action: #selector(goBackAction(_:)),       label: "Back")
-        case ItemID.forward:      return makeItem(id, symbol: "chevron.right",      action: #selector(goForwardAction(_:)),    label: "Forward")
-        case ItemID.openExternal: return makeItem(id, symbol: "safari",             action: #selector(openExternalAction(_:)), label: "Open in Browser")
-        case ItemID.reload:       return makeItem(id, symbol: "arrow.clockwise",    action: #selector(reloadAction(_:)),       label: "Reload")
-        default: return nil
+        case ItemID.navGroup:
+            let group = NSToolbarItemGroup(
+                itemIdentifier: id,
+                images: [
+                    NSImage(systemSymbolName: "chevron.left",  accessibilityDescription: "Back")!,
+                    NSImage(systemSymbolName: "chevron.right", accessibilityDescription: "Forward")!,
+                ],
+                selectionMode: .momentary,
+                labels: ["Back", "Forward"],
+                target: self,
+                action: #selector(navGroupAction(_:))
+            )
+            group.controlRepresentation = .expanded
+            group.label = "Navigation"
+            return group
+        case ItemID.openExternal:
+            return makeItem(id, symbol: "safari",          action: #selector(openExternalAction(_:)), label: "Open in Browser")
+        case ItemID.reload:
+            return makeItem(id, symbol: "arrow.clockwise", action: #selector(reloadAction(_:)),       label: "Reload")
+        default:
+            return nil
+        }
+    }
+
+    @objc func navGroupAction(_ sender: NSToolbarItemGroup) {
+        if sender.selectedIndex == 0 {
+            webView.goBack()
+        } else {
+            webView.goForward()
         }
     }
 
