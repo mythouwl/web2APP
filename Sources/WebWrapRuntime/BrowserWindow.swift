@@ -4,6 +4,7 @@ import AppKit
 final class BrowserWindow: NSWindow, NSToolbarDelegate {
     let webView: WKWebView
     private var navDelegate: WebViewDelegate?
+    private var titleObservation: NSKeyValueObservation?
 
     init(config: Config) {
         let webConfig = WKWebViewConfiguration()
@@ -32,6 +33,24 @@ final class BrowserWindow: NSWindow, NSToolbarDelegate {
         self.toolbar = toolbar
 
         webView.load(URLRequest(url: config.url))
+
+        titleObservation = webView.observe(\.title, options: [.new]) { _, change in
+            let title = (change.newValue ?? nil) ?? ""
+            DispatchQueue.main.async {
+                NSApp.dockTile.badgeLabel = BrowserWindow.extractBadge(from: title)
+            }
+        }
+    }
+
+    static func extractBadge(from title: String) -> String? {
+        // Match leading "(N) ..." or "[N] ..." patterns common in Gmail/Slack/etc.
+        let pattern = #"^[\(\[](\d+)[\)\]]"#
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let match = regex.firstMatch(in: title, range: NSRange(title.startIndex..., in: title)),
+              let range = Range(match.range(at: 1), in: title) else {
+            return nil
+        }
+        return String(title[range])
     }
 
     // MARK: - Toolbar items
