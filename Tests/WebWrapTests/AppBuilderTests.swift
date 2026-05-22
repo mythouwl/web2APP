@@ -1,4 +1,5 @@
 import XCTest
+import AppKit
 @testable import WebWrap
 
 final class AppBuilderTests: XCTestCase {
@@ -39,5 +40,33 @@ final class AppBuilderTests: XCTestCase {
             try AppBuilder.delete(appModel)
             XCTAssertFalse(FileManager.default.fileExists(atPath: appModel.bundleURL.path))
         }
+    }
+
+    func testBuildWithCustomImage() throws {
+        guard (try? AppBuilder.locateRuntimeBinary()) != nil else {
+            throw XCTSkip("Runtime binary not present; run `swift build` first")
+        }
+
+        // Synthesize a small green PNG to use as the custom icon source.
+        let img = NSImage(size: NSSize(width: 64, height: 64))
+        img.lockFocus()
+        NSColor.green.setFill()
+        NSBezierPath(rect: NSRect(x: 0, y: 0, width: 64, height: 64)).fill()
+        img.unlockFocus()
+        let png = NSBitmapImageRep(data: img.tiffRepresentation!)!
+            .representation(using: .png, properties: [:])!
+
+        let name = "WW Custom \(UUID().uuidString.prefix(6))"
+        let config = GeneratorConfig(name: name,
+                                     url: URL(string: "https://example.com")!,
+                                     userAgent: nil, iconData: nil)
+        let url = try AppBuilder.buildWithCustomImage(config: config, imageData: png)
+        addTeardownBlock { try? FileManager.default.removeItem(at: url) }
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
+        let icnsURL = url.appendingPathComponent("Contents/Resources/AppIcon.icns")
+        let icnsData = try Data(contentsOf: icnsURL)
+        XCTAssertGreaterThan(icnsData.count, 1000)
+        XCTAssertEqual(String(data: icnsData.prefix(4), encoding: .ascii), "icns")
     }
 }

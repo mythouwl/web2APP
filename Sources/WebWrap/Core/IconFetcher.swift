@@ -14,6 +14,18 @@ enum IconFetcherError: Error {
 }
 
 struct IconFetcher {
+    /// End-to-end: collect candidates, pick best (or fall back), render macOS-style 1024 PNG.
+    static func fetch(siteURL: URL) async throws -> Data {
+        let candidates = await collectCandidates(siteURL: siteURL)
+        let best: Data
+        if let picked = pickBest(candidates) {
+            best = picked
+        } else {
+            best = try generateFallback(siteURL: siteURL)
+        }
+        return try IconRenderer.renderMacOSStyle(rawIcon: best, originURL: siteURL)
+    }
+
     /// Collects all available icon candidates from the site in parallel.
     static func collectCandidates(siteURL: URL) async -> [IconCandidate] {
         async let htmlAndManifest = parseHTMLForIcons(siteURL: siteURL)

@@ -119,4 +119,20 @@ struct AppBuilder {
     static func delete(_ app: InstalledApp) throws {
         try FileManager.default.removeItem(at: app.bundleURL)
     }
+
+    /// Auto-icon pipeline: fetch site icon, render macOS style, generate .icns, build & install.
+    @discardableResult
+    static func buildAutoIcon(config: GeneratorConfig) async throws -> URL {
+        let png = try await IconFetcher.fetch(siteURL: config.url)
+        let icns = try IconRenderer.makeICNS(from: png)
+        return try build(config: config, iconICNS: icns)
+    }
+
+    /// Custom-icon pipeline: take user-provided image bytes, style + convert, build & install.
+    @discardableResult
+    static func buildWithCustomImage(config: GeneratorConfig, imageData: Data) throws -> URL {
+        let png = try IconRenderer.renderMacOSStyle(rawIcon: imageData, originURL: config.url)
+        let icns = try IconRenderer.makeICNS(from: png)
+        return try build(config: config, iconICNS: icns)
+    }
 }
