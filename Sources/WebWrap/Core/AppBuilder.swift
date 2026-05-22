@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 
 enum AppBuilderError: Error {
     case runtimeBinaryNotFound(searched: [String])
@@ -114,6 +115,12 @@ struct AppBuilder {
                                 name: cfg.name, url: cfg.url, userAgent: cfg.userAgent)
         }
         .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    /// SHA-256 of a file's contents as a lowercase hex string. nil on read failure.
+    static func sha256(of url: URL) -> String? {
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 
     static func delete(_ app: InstalledApp) throws {

@@ -44,6 +44,11 @@ enum MenuBar {
             action: #selector(BrowserWindow.goForwardAction(_:)), keyEquivalent: "]"))
         viewMenu.addItem(NSMenuItem(title: "Reload",
             action: #selector(BrowserWindow.reloadAction(_:)), keyEquivalent: "r"))
+        viewMenu.addItem(.separator())
+        let openExt = NSMenuItem(title: "Open in Default Browser",
+            action: #selector(BrowserWindow.openExternalAction(_:)), keyEquivalent: "o")
+        openExt.keyEquivalentModifierMask = [.command, .shift]
+        viewMenu.addItem(openExt)
         viewItem.submenu = viewMenu
 
         // Window menu

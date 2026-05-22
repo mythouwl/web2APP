@@ -58,33 +58,38 @@ final class BrowserWindow: NSWindow, NSToolbarDelegate {
     private enum ItemID {
         static let back = NSToolbarItem.Identifier("back")
         static let forward = NSToolbarItem.Identifier("forward")
+        static let openExternal = NSToolbarItem.Identifier("openExternal")
         static let reload = NSToolbarItem.Identifier("reload")
     }
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [ItemID.back, ItemID.forward, .flexibleSpace, ItemID.reload]
+        [ItemID.back, ItemID.forward, .flexibleSpace, ItemID.openExternal, ItemID.reload]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [ItemID.back, ItemID.forward, ItemID.reload, .flexibleSpace, .space]
+        [ItemID.back, ItemID.forward, ItemID.openExternal, ItemID.reload, .flexibleSpace, .space]
     }
 
     func toolbar(_ toolbar: NSToolbar,
                  itemForItemIdentifier id: NSToolbarItem.Identifier,
                  willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
         switch id {
-        case ItemID.back:    return makeItem(id, symbol: "chevron.left",    action: #selector(goBackAction(_:)))
-        case ItemID.forward: return makeItem(id, symbol: "chevron.right",   action: #selector(goForwardAction(_:)))
-        case ItemID.reload:  return makeItem(id, symbol: "arrow.clockwise", action: #selector(reloadAction(_:)))
+        case ItemID.back:         return makeItem(id, symbol: "chevron.left",       action: #selector(goBackAction(_:)),       label: "Back")
+        case ItemID.forward:      return makeItem(id, symbol: "chevron.right",      action: #selector(goForwardAction(_:)),    label: "Forward")
+        case ItemID.openExternal: return makeItem(id, symbol: "safari",             action: #selector(openExternalAction(_:)), label: "Open in Browser")
+        case ItemID.reload:       return makeItem(id, symbol: "arrow.clockwise",    action: #selector(reloadAction(_:)),       label: "Reload")
         default: return nil
         }
     }
 
     private func makeItem(_ id: NSToolbarItem.Identifier,
                           symbol: String,
-                          action: Selector) -> NSToolbarItem {
+                          action: Selector,
+                          label: String) -> NSToolbarItem {
         let item = NSToolbarItem(itemIdentifier: id)
-        item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+        item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: label)
+        item.label = label
+        item.toolTip = label
         item.target = self
         item.action = action
         return item
@@ -93,4 +98,9 @@ final class BrowserWindow: NSWindow, NSToolbarDelegate {
     @objc func goBackAction(_ sender: Any?)    { webView.goBack() }
     @objc func goForwardAction(_ sender: Any?) { webView.goForward() }
     @objc func reloadAction(_ sender: Any?)    { webView.reload() }
+    @objc func openExternalAction(_ sender: Any?) {
+        if let url = webView.url {
+            NSWorkspace.shared.open(url)
+        }
+    }
 }

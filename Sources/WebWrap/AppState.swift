@@ -58,6 +58,39 @@ final class AppState: ObservableObject {
         await createAuto(name: newName, url: newURL, userAgent: newUA)
     }
 
+    /// Silently upgrades only wrappers whose runtime hash differs from the current one.
+    /// Returns count actually updated. Intended for app-launch background sync.
+    @discardableResult
+    func autoUpdateRuntimesIfNeeded() async -> Int {
+        let appsSnapshot = wrappers
+        guard !appsSnapshot.isEmpty,
+              let runtime = try? AppBuilder.locateRuntimeBinary(),
+              let currentHash = AppBuilder.sha256(of: runtime) else { return 0 }
+        let runtimePath = runtime.path
+        let count = await Task.detached(priority: .utility) { () -> Int in
+            var n = 0
+            let fm = FileManager.default
+            for app in appsSnapshot {
+                let dst = app.bundleURL.appendingPathComponent("Contents/MacOS/WebWrapRuntime")
+                guard let theirHash = AppBuilder.sha256(of: dst),
+                      theirHash != currentHash else { continue }
+                do {
+                    try fm.removeItem(at: dst)
+                    try fm.copyItem(at: URL(fileURLWithPath: runtimePath), to: dst)
+                    try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: dst.path)
+                    let proc = Process()
+                    proc.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
+                    proc.arguments = ["--force", "--deep", "--sign", "-", app.bundleURL.path]
+                    proc.standardOutput = Pipe(); proc.standardError = Pipe()
+                    try proc.run(); proc.waitUntilExit()
+                    if proc.terminationStatus == 0 { n += 1 }
+                } catch { }
+            }
+            return n
+        }.value
+        return count
+    }
+
     /// Replaces the WebWrapRuntime binary inside every installed wrapper with the current
     /// runtime, then re-signs each. Returns the number successfully updated.
     func updateAllWrappers() async -> Int {

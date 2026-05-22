@@ -19,7 +19,10 @@ struct WebWrapApp: App {
             }
             .environmentObject(loc)
             .frame(minWidth: 720, minHeight: 480)
-            .task { state.refresh() }
+            .task {
+                state.refresh()
+                await state.autoUpdateRuntimesIfNeeded()
+            }
             .sheet(isPresented: $showCreate) {
                 CreateSheet(state: state, isPresented: $showCreate)
                     .environmentObject(loc)
